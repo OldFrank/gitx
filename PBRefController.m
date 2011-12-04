@@ -23,6 +23,8 @@
 
 @implementation PBRefController
 
+@synthesize pushContextInfo, deleteRefContextInfo, dropContextInfo;
+
 - (void)awakeFromNib
 {
 	[commitList registerForDraggedTypes:[NSArray arrayWithObject:@"PBGitRef"]];
@@ -80,28 +82,29 @@
 						 informativeTextWithFormat:@"Are you sure you want to %@?", sdesc];
     [alert setShowsSuppressionButton:YES];
 
-	NSMutableDictionary *info = [NSMutableDictionary dictionary];
+	NSMutableDictionary *info = [[NSMutableDictionary dictionary] retain];
 	if (ref)
 		[info setObject:ref forKey:kGitXBranchType];
 	if (remoteRef)
 		[info setObject:remoteRef forKey:kGitXRemoteType];
-
+	self.pushContextInfo = info;
+	
 	[alert beginSheetModalForWindow:[historyController.repository.windowController window]
 					  modalDelegate:self
 					 didEndSelector:@selector(confirmPushRefSheetDidEnd:returnCode:contextInfo:)
-						contextInfo:info];
+						contextInfo:nil];
 }
 
 - (void)confirmPushRefSheetDidEnd:(NSAlert *)sheet returnCode:(int)returnCode contextInfo:(void *)contextInfo
 {
-    [[sheet window] orderOut:nil];
+	[[sheet window] orderOut:nil];
 
 	if ([[sheet suppressionButton] state] == NSOnState)
         [PBGitDefaults suppressDialogWarningForDialog:kDialogConfirmPush];
 
 	if (returnCode == NSAlertDefaultReturn) {
-		PBGitRef *ref = [(NSDictionary *)contextInfo objectForKey:kGitXBranchType];
-		PBGitRef *remoteRef = [(NSDictionary *)contextInfo objectForKey:kGitXRemoteType];
+		PBGitRef *ref = [self.pushContextInfo objectForKey:kGitXBranchType];
+		PBGitRef *remoteRef = [self.pushContextInfo objectForKey:kGitXRemoteType];
 
 		[historyController.repository beginPushRef:ref toRemote:remoteRef];
 	}
@@ -267,13 +270,14 @@
 						 informativeTextWithFormat:@"Are you sure you want to remove the %@?", ref_desc];
     [alert setShowsSuppressionButton:YES];
 	
+	self.deleteRefContextInfo = ref;
 	[alert beginSheetModalForWindow:[historyController.repository.windowController window]
 					  modalDelegate:self
 					 didEndSelector:@selector(deleteRefSheetDidEnd:returnCode:contextInfo:)
-						contextInfo:ref];
+						contextInfo:nil];
 }
 
-- (void)deleteRefSheetDidEnd:(NSAlert *)sheet returnCode:(int)returnCode contextInfo:(void  *)contextInfo
+- (void)deleteRefSheetDidEnd:(NSAlert *)sheet returnCode:(int)returnCode contextInfo:(void  *)context
 {
     [[sheet window] orderOut:nil];
 
@@ -281,7 +285,7 @@
         [PBGitDefaults suppressDialogWarningForDialog:kDialogDeleteRef];
 
 	if (returnCode == NSAlertDefaultReturn) {
-		PBGitRef *ref = (PBGitRef *)contextInfo;
+		PBGitRef *ref = self.deleteRefContextInfo;
 		[historyController.repository deleteRef:ref];
 	}
 }
@@ -405,7 +409,7 @@
 							  oldCommit, @"oldCommit",
 							  dropCommit, @"dropCommit",
 							  nil];
-
+	
 	if ([PBGitDefaults isDialogWarningSuppressedForDialog:kDialogAcceptDroppedRef]) {
 		[self dropRef:dropInfo];
 		return YES;
@@ -422,11 +426,11 @@
 									   otherButton:nil
 						 informativeTextWithFormat:infoText];
     [alert setShowsSuppressionButton:YES];
-
+	self.dropContextInfo = dropInfo;
 	[alert beginSheetModalForWindow:[historyController.repository.windowController window]
 					  modalDelegate:self
 					 didEndSelector:@selector(acceptDropInfoAlertDidEnd:returnCode:contextInfo:)
-						contextInfo:dropInfo];
+						contextInfo:nil];
 
 	return YES;
 }
@@ -436,7 +440,7 @@
     [[alert window] orderOut:nil];
 
 	if (returnCode == NSAlertDefaultReturn)
-		[self dropRef:contextInfo];
+		[self dropRef:self.dropContextInfo];
 
 	if ([[alert suppressionButton] state] == NSOnState)
         [PBGitDefaults suppressDialogWarningForDialog:kDialogAcceptDroppedRef];

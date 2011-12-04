@@ -21,7 +21,15 @@
 	IBOutlet PBCommitList *commitList;
 
 	IBOutlet NSPopUpButton *branchPopUp;
+	
+	NSDictionary *pushContextInfo;
+	PBGitRef *deleteRefContextInfo;
+	NSDictionary *dropContextInfo;
 }
+
+@property (nonatomic, retain) NSDictionary *pushContextInfo;
+@property (nonatomic, retain) PBGitRef *deleteRefContextInfo;
+@property (nonatomic, retain) NSDictionary *dropContextInfo;
 
 - (void) fetchRemote:(PBRefMenuItem *)sender;
 - (void) pullRemote:(PBRefMenuItem *)sender;
